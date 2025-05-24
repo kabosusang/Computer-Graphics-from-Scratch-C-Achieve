@@ -3,13 +3,13 @@
 #include <base/Canvas.hpp>
 #include <base/Painter.hpp>
 
-void RunRect(float deltime) {
+void RunPixel(float deltime) {
     auto& painter = Painter::getInstance();
     //清屏
 	painter.Clear(Color(255,255,255,255));
 
     //画一个像素
-    painter.PutPixel(100,100,Color{255,0,0,255});
+    painter.PutPixel(0,0,Color{255,0,0,255});
     
 	// 提交渲染
 	painter.Present();
@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
 		}
 	});
     //渲染事件
-	train.subscribeFrame(RunRect);
+	train.subscribeFrame(RunPixel);
     
     
     //渲染循环

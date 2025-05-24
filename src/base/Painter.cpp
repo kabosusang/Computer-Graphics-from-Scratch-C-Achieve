@@ -12,3 +12,13 @@ Painter::Painter() :
 Painter::~Painter() {
 	renderer.reset();
 }
+
+void Painter::PutPixel(float x, float y,Color color) {
+    auto& canvas = Canvas::getInstance();
+	SetColor(color);
+	//ChangeCorrdinate
+	auto x1 = static_cast<int>(canvas.GetWindowW() / 2) + x;
+	auto y1 = static_cast<int>(canvas.GetWindowH()  / 2) - y;
+
+	SDL_RenderPoint(GetRenderer(), x1, y1);
+}

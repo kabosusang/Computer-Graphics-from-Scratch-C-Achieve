@@ -14,13 +14,17 @@ public:
 
 	SDL_Window* GetWindow() { return window.get(); }
 
+	//Window WH
+    int GetWindowW(){return WindowW;}
+    int GetWindowH(){return WindowH;}
+
 private:
 	Canvas();
 	~Canvas();
 	static SDL_Window* CreateSDLWindow();
 
 private:
-	static const int WindowW = 640;
-	static const int WindowH = 480;
+	int WindowW = 640;
+	int WindowH = 480;
 	std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window;
 };

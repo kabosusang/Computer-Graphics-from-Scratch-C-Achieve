@@ -2,7 +2,7 @@
 
 SDL_Window* Canvas::CreateSDLWindow() {
 	auto* win =
-			SDL_CreateWindow("CGScratch", WindowW, WindowH, SDL_WINDOW_OPENGL);
+			SDL_CreateWindow("CGScratch", 640, 480, SDL_WINDOW_OPENGL);
 	if (!win) {
 		SDL_Log("Unable to create window: %s", SDL_GetError());
 		SDL_Quit();
