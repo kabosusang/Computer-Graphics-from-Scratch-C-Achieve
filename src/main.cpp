@@ -5,22 +5,12 @@
 
 void RunRect(float deltime) {
     auto& painter = Painter::getInstance();
-    auto renderer = painter.GetRenderer();
-	// 清屏
-    painter.SetColor(Color(30,30,30,255));//设置画笔颜色
-	painter.Clear();
+    //清屏
+	painter.Clear(Color(255,255,255,255));
 
-	// 渲染逻辑（示例：移动方块）
-	static float x = 0;
-	x += 100 * deltime; // 每秒移动100像素
-	if (x > 800) {
-		x = 0;
-	}
-
-	SDL_FRect rect{ x, 300, 50, 50 };
-	SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-	SDL_RenderFillRect(renderer, &rect);
-
+    //画一个像素
+    painter.PutPixel(100,100,Color{255,0,0,255});
+    
 	// 提交渲染
 	painter.Present();
 }

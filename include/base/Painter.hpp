@@ -1,15 +1,16 @@
 #pragma once
+#include "SDL3/SDL_render.h"
 #include <SDL3/SDL.h>
 #include <cstdint>
 #include <memory>
 
-struct Color
-{
-    Color(uint8_t r,uint8_t g,uint8_t b,uint8_t a):r(r),g(g),b(b),a(a){}
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
-    uint8_t a;
+struct Color {
+	Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) :
+			r(r), g(g), b(b), a(a) {}
+	uint8_t r;
+	uint8_t g;
+	uint8_t b;
+	uint8_t a;
 };
 
 class Painter {
@@ -22,15 +23,20 @@ public:
 	Painter& operator=(const Painter&) = delete;
 	SDL_Renderer* GetRenderer() { return renderer.get(); }
 
-//SDL Setting Painter
-//设置颜色
-void SetColor(Color color){SDL_SetRenderDrawColor(GetRenderer(),color.r,color.g,color.b,color.a);}
-void Clear(){SDL_RenderClear(GetRenderer());}
-void Present(){SDL_RenderPresent(GetRenderer());}
+	//SDL Setting Painter
+	//设置颜色
+	void SetColor(Color color) { SDL_SetRenderDrawColor(GetRenderer(), color.r, color.g, color.b, color.a); }
+	void Clear(Color color) {
+		SetColor(color);
+		SDL_RenderClear(GetRenderer());
+	}
+	void Present() { SDL_RenderPresent(GetRenderer()); }
 
-//RunPixelPen
-void PutPixel(){}
-
+	//RunPixelPen
+	void PutPixel(float x, float y,Color color) {
+        SetColor(color);
+		SDL_RenderPoint(GetRenderer(), x, y);
+	}
 
 private:
 	Painter();
