@@ -1,9 +1,10 @@
+#include "Tools/Light.hpp"
 #include "Tools/Shape.hpp"
 #include "Tools/Vector.hpp"
 #include <RayTracing/RayTracing.hpp>
 #include <Tools/Color.hpp>
-#include <cmath>
-#include <optional>
+#include <iostream>
+#include <limits>
 
 RayTracing::RayTracing() :
 		painter(Painter::getInstance()) {
@@ -18,12 +19,22 @@ RayTracing::RayTracing() :
 	scene_.AddSphere({ Vec3(0, -1, 3), 1, Color(255, 0, 0, 255) }); // 红色
 	scene_.AddSphere({ Vec3(2, 0, 4), 1, Color(0, 0, 255, 255) }); // 蓝色
 	scene_.AddSphere({ Vec3(-2, 0, 4), 1, Color(0, 255, 0, 255) }); // 绿色
+	scene_.AddSphere({ Vec3(0, -5001, 0), 5000, Color(255, 255, 0, 255) }); // 绿色很大的圆
+
+	//场景光照添加
+	//环境光
+	scene_.AddLight({ LightType::ambient, 0.2f, std::nullopt, std::nullopt });
+	//点光源
+	scene_.AddLight({ LightType::point, 0.6f, Vec3(2, 1, 0), std::nullopt });
+	//平行光
+	scene_.AddLight({ LightType::directional, 0.2f, std::nullopt, Vec3(1, 4, 4) });
 }
 
 void RayTracing::Renderer(float time) {
 	{
-        //清屏
-        painter.Clear(Color{255,255,255,255});
+		std::cout << "FPS: " << 1.0f / time << std::endl;
+		//清屏
+		painter.Clear(Color{ 255, 255, 255, 255 });
 		//遍历画布所有像素
 		for (int x = -canvaswidth_ / 2; x < canvaswidth_ / 2; x++) {
 			for (int y = -canvasheight_ / 2; y < canvasheight_ / 2; y++) {
@@ -38,7 +49,7 @@ void RayTracing::Renderer(float time) {
 }
 
 Color RayTracing::TraceRay(Vec3 origin, Vec3 direction, int t_min, int t_max) {
-	auto closet_t = 1000; //t的相交值 初始化设置为最大值
+	auto closet_t = std::numeric_limits<float>::max(); //t的相交值 初始化设置为最大值
 	std::optional<Sphere> closet_sphere;
 	//遍历场景中的圆
 	for (auto sphere : this->scene_.GetSpheres()) {
@@ -52,12 +63,22 @@ Color RayTracing::TraceRay(Vec3 origin, Vec3 direction, int t_min, int t_max) {
 			closet_sphere = sphere;
 		}
 	}
-
-	if (closet_sphere) {
-		return closet_sphere->color;
-	} else {
+	//射线和圆无交点
+	if (!closet_sphere.has_value()) {
 		return Color(255, 255, 255, 255); //背景白色
 	}
+
+	//射线和圆有交点
+	//交点
+	auto point = VAdd(origin, VMutiply(closet_t, direction));
+	//法线(从圆心射出)
+	auto normal = VSubtract(point, closet_sphere->center);
+	//法线归一化
+	normal = VNormalize(normal);
+    
+	//计算光照
+    Vec3 lighting = VMutiply(ComputeLighting(point, normal), ColorToVec3(closet_sphere->color));
+    return Vec3ToColor(lighting);
 }
 
 /**
@@ -78,11 +99,11 @@ Color RayTracing::TraceRay(Vec3 origin, Vec3 direction, int t_min, int t_max) {
  */
 std::tuple<float, float> RayTracing::IntersectRaySphere(Vec3 origion, Vec3 direction, Sphere& sphere) {
 	//向量CO (O-C)向量减法 后减前就是向量CO
-	auto oc = Subtract(origion, sphere.center);
+	auto oc = VSubtract(origion, sphere.center);
 
-	auto k1 = DotProduct(direction, direction); //a
-	auto k2 = 2 * DotProduct(oc, direction); //b
-	auto k3 = DotProduct(oc, oc) - sphere.radius * sphere.radius; //c
+	auto k1 = VDotProduct(direction, direction); //a
+	auto k2 = 2 * VDotProduct(oc, direction); //b
+	auto k3 = VDotProduct(oc, oc) - sphere.radius * sphere.radius; //c
 
 	//计算b² - 4ac 计算方程有无解
 	auto discriminant = k2 * k2 - 4 * k1 * k3;
@@ -94,4 +115,44 @@ std::tuple<float, float> RayTracing::IntersectRaySphere(Vec3 origion, Vec3 direc
 	auto t1 = (-k2 + std::sqrt(discriminant)) / (2 * k1);
 	auto t2 = (-k2 - std::sqrt(discriminant)) / (2 * k1);
 	return { t1, t2 };
+}
+
+/**
+ * @brief
+ *  //  光照方程
+	// Ip = Ia + Ii * (N*L) / 丨N丨丨L丨
+	//  Ia 环境光强度
+	//  Ii 灯光强度
+	// (N*L) / 丨N丨丨L丨 夹角的余弦
+ * @param Point
+ * @param Normal
+ * @return float
+ */
+float RayTracing::ComputeLighting(Vec3 Point, Vec3 Normal) {
+	auto intensity = 0.0f; //光强
+	auto length_n = VLength(Normal); // 法线长度
+	for (auto light : this->scene_.GetLights()) {
+		if (light.type == LightType::ambient) {
+			intensity += light.intensity;
+		} else {
+			auto vec_l = Vec3{}; //光照方向
+			switch (light.type) {
+				case LightType::directional:
+					vec_l = light.direction.value();
+					break;
+				case LightType::point:
+					vec_l = VSubtract(light.position.value(), Point);
+					break;
+				default:
+					break;
+			}
+			auto n_dot_l = VDotProduct(Normal, vec_l);
+			if (n_dot_l > 0) {
+				//最终方程计算
+				//Ii * (N*L) / 丨N丨丨L丨
+				intensity += light.intensity * n_dot_l / (length_n * VLength(vec_l));
+			}
+		}
+	}
+	return intensity;
 }

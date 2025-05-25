@@ -4,18 +4,6 @@
 #include <base/Canvas.hpp>
 #include <base/Painter.hpp>
 
-void RunPixel(float deltime) {
-	auto& painter = Painter::getInstance();
-	//清屏
-	painter.Clear(Color(255, 255, 255, 255));
-
-	//画一个像素
-	painter.PutPixel(0, 0, Color{ 255, 0, 0, 255 });
-
-	// 提交渲染
-	painter.Present();
-}
-
 int main(int argc, char* argv[]) {
 	//画布
 	auto& canvas = Canvas::getInstance();

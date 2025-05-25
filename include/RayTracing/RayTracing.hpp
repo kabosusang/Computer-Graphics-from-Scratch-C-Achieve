@@ -21,7 +21,7 @@ public:
 	static Vec3 CanvasToViewport(Vec2 point, Vec4 wh, float d) {
 		return { point.x * wh.x / wh.z, point.y * wh.y / wh.w, d };
 	}
-
+    //主渲染逻辑
 	void Renderer(float time);
 
 private:
@@ -38,8 +38,10 @@ private:
 	 * @return Color
 	 */
 	Color TraceRay(Vec3 O, Vec3 D, int t_min, int t_max);
-
 	std::tuple<float, float> IntersectRaySphere(Vec3 origion, Vec3 direction, Sphere& sphere);
+
+    //计算光照
+    float ComputeLighting(Vec3 P,Vec3 N);
 
 private:
 	Vec3 CameraPosition_{ 0, 0, 0 };
@@ -47,9 +49,7 @@ private:
 	int viewportwight_, viewportheight_;
 
 	float distance_;
-
 	Painter& painter;
-
 private:
 	//Scene
 	RayTracingScene scene_;
