@@ -23,6 +23,9 @@ public:
 	}
     //主渲染逻辑
 	void Renderer(float time);
+    void AddCameraX(){
+        CameraPosition_.x++;
+    }
 
 private:
 	Vec3 CanvasToViewport(Vec2 point) {
@@ -41,7 +44,7 @@ private:
 	std::tuple<float, float> IntersectRaySphere(Vec3 origion, Vec3 direction, Sphere& sphere);
 
     //计算光照
-    float ComputeLighting(Vec3 P,Vec3 N);
+    float ComputeLighting(Vec3 P,Vec3 N,Vec3 view,int specular);
 
 private:
 	Vec3 CameraPosition_{ 0, 0, 0 };

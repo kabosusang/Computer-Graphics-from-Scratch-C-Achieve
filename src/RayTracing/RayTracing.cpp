@@ -3,6 +3,7 @@
 #include "Tools/Vector.hpp"
 #include <RayTracing/RayTracing.hpp>
 #include <Tools/Color.hpp>
+#include <algorithm>
 #include <iostream>
 #include <limits>
 
@@ -16,10 +17,10 @@ RayTracing::RayTracing() :
 	distance_ = 1;
 
 	//场景圆添加
-	scene_.AddSphere({ Vec3(0, -1, 3), 1, Color(255, 0, 0, 255) }); // 红色
-	scene_.AddSphere({ Vec3(2, 0, 4), 1, Color(0, 0, 255, 255) }); // 蓝色
-	scene_.AddSphere({ Vec3(-2, 0, 4), 1, Color(0, 255, 0, 255) }); // 绿色
-	scene_.AddSphere({ Vec3(0, -5001, 0), 5000, Color(255, 255, 0, 255) }); // 绿色很大的圆
+	scene_.AddSphere({ Vec3(0, -1, 3), 1, Color(255, 0, 0, 255), 500 }); // 红色 闪亮
+	scene_.AddSphere({ Vec3(2, 0, 4), 1, Color(0, 0, 255, 255), 500 }); // 蓝色 闪亮
+	scene_.AddSphere({ Vec3(-2, 0, 4), 1, Color(0, 255, 0, 255), 10 }); // 绿色 略微善良
+	scene_.AddSphere({ Vec3(0, -5001, 0), 5000, Color(255, 255, 0, 255), 1000 }); // 黄色很大的圆 异常善良
 
 	//场景光照添加
 	//环境光
@@ -32,7 +33,7 @@ RayTracing::RayTracing() :
 
 void RayTracing::Renderer(float time) {
 	{
-		std::cout << "FPS: " << 1.0f / time << std::endl;
+		//std::cout << "FPS: " << 1.0f / time << std::endl; //我CPU只有5帧数
 		//清屏
 		painter.Clear(Color{ 255, 255, 255, 255 });
 		//遍历画布所有像素
@@ -53,7 +54,7 @@ Color RayTracing::TraceRay(Vec3 origin, Vec3 direction, int t_min, int t_max) {
 	std::optional<Sphere> closet_sphere;
 	//遍历场景中的圆
 	for (auto sphere : this->scene_.GetSpheres()) {
-		auto [ts1, ts2] = IntersectRaySphere(CameraPosition_, direction, sphere);
+		auto [ts1, ts2] = IntersectRaySphere(origin, direction, sphere);
 		if (ts1 < closet_t && t_min < ts1 && ts1 < t_max) { // viewport和projection之间，并且找最近交点
 			closet_t = ts1;
 			closet_sphere = sphere;
@@ -75,10 +76,13 @@ Color RayTracing::TraceRay(Vec3 origin, Vec3 direction, int t_min, int t_max) {
 	auto normal = VSubtract(point, closet_sphere->center);
 	//法线归一化
 	normal = VNormalize(normal);
-    
+
 	//计算光照
-    Vec3 lighting = VMutiply(ComputeLighting(point, normal), ColorToVec3(closet_sphere->color));
-    return Vec3ToColor(lighting);
+	auto view = VMutiply(-1, direction);
+	float lighting = ComputeLighting(point, normal, view, closet_sphere->specular);
+	//Fix 反射光变成黑球
+    lighting = std::clamp(lighting, 0.0f, 1.0f); // 确保光照在 [0,1] 范围
+    return Vec3ToColor(VMutiply(lighting, ColorToVec3(closet_sphere->color)));
 }
 
 /**
@@ -120,17 +124,26 @@ std::tuple<float, float> RayTracing::IntersectRaySphere(Vec3 origion, Vec3 direc
 /**
  * @brief
  *  //  光照方程
-	// Ip = Ia + Ii * (N*L) / 丨N丨丨L丨
+	// 漫反射方程+ 镜面反射方程
+    // 漫反射方程-> Ip = Ia + Ii * (N*L) / 丨N丨丨L丨 
 	//  Ia 环境光强度
 	//  Ii 灯光强度
 	// (N*L) / 丨N丨丨L丨 夹角的余弦
+    //----------------------------------
+    //镜面反射方程
+    //[Ri * V / 丨Ri丨丨V丨] 的S平方
+    //S Specular
+    //Ri 反射方向
+    //V 看向方向 
  * @param Point
  * @param Normal
  * @return float
  */
-float RayTracing::ComputeLighting(Vec3 Point, Vec3 Normal) {
+float RayTracing::ComputeLighting(Vec3 Point, Vec3 Normal, Vec3 view, int specular) {
 	auto intensity = 0.0f; //光强
 	auto length_n = VLength(Normal); // 法线长度
+	auto length_v = VLength(view); //视线长度
+
 	for (auto light : this->scene_.GetLights()) {
 		if (light.type == LightType::ambient) {
 			intensity += light.intensity;
@@ -151,6 +164,17 @@ float RayTracing::ComputeLighting(Vec3 Point, Vec3 Normal) {
 				//最终方程计算
 				//Ii * (N*L) / 丨N丨丨L丨
 				intensity += light.intensity * n_dot_l / (length_n * VLength(vec_l));
+			}
+            
+			if (specular > 0) { 
+				auto vec_r = VSubtract(VMutiply(2.0 * VDotProduct(Normal, vec_l), Normal), vec_l);
+				auto r_dot_v = VDotProduct(vec_r, view);
+				if (r_dot_v > 0) {
+					float denominator = VLength(vec_r);
+					if (denominator > 1e-6f) {
+						intensity += light.intensity * std::pow(r_dot_v / (denominator * length_v), specular);
+					}
+				}
 			}
 		}
 	}

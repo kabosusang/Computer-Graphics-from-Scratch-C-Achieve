@@ -9,7 +9,7 @@ int main(int argc, char* argv[]) {
 	auto& canvas = Canvas::getInstance();
 	//画笔
 	auto& painter = Painter::getInstance();
-    //光线追踪渲染器
+	//光线追踪渲染器
 	RayTracing renderer;
 
 	//事件循环 和 GameLoop
@@ -17,11 +17,14 @@ int main(int argc, char* argv[]) {
 	Game game(train);
 
 	//键盘事件
-	train.subscribeEvent([](SDL_Event& e) {
+	train.subscribeEvent([&](SDL_Event& e) {
 		if (e.type == SDL_EVENT_KEY_DOWN) {
-			SDL_Log("Key pressed: %d", e.key.scancode);
-		}
+			const char* keyName = SDL_GetScancodeName(e.key.scancode);
+			SDL_Log("Key pressed: %s (Scancode: %d)", keyName, e.key.scancode);
+            renderer.AddCameraX();
+        }
 	});
+    
 	//渲染事件
 	train.subscribeFrame([&renderer](float deltaTime) {
 		renderer.Renderer(deltaTime);

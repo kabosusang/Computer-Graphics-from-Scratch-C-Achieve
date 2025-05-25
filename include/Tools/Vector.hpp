@@ -1,6 +1,7 @@
 #pragma once
 #include "Color.hpp"
 #include <cmath>
+#include <cstdint>
 
 
 struct Vec4 {
@@ -56,6 +57,21 @@ constexpr Vec3 VClamp(Vec3 vec) {
 										: vec.z
 	};
 }
+
+
+constexpr Color CClamp(Color color) {
+	return {
+		(color.r < (uint8_t)0) ? (uint8_t)0 : (color.r > (uint8_t)255) ? (uint8_t)255
+										: color.r,
+		(color.g < (uint8_t)0) ? (uint8_t)0 : (color.g > (uint8_t)255) ? (uint8_t)255
+										: color.g,
+		(color.b < (uint8_t)0) ? (uint8_t)0 : (color.r > (uint8_t)255) ? (uint8_t)255
+										: color.b,
+        255
+	};
+}
+
+
 
 constexpr Vec3 VNormalize(Vec3 vec) {
 	return VMutiply(1.0 / VLength(vec), vec);
