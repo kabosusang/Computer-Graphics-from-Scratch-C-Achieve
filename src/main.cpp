@@ -1,16 +1,17 @@
 #include "core/Event.hpp"
 #include "core/Game.hpp"
+#include <RayTracing/RayTracing.hpp>
 #include <base/Canvas.hpp>
 #include <base/Painter.hpp>
 
 void RunPixel(float deltime) {
-    auto& painter = Painter::getInstance();
-    //清屏
-	painter.Clear(Color(255,255,255,255));
+	auto& painter = Painter::getInstance();
+	//清屏
+	painter.Clear(Color(255, 255, 255, 255));
 
-    //画一个像素
-    painter.PutPixel(0,0,Color{255,0,0,255});
-    
+	//画一个像素
+	painter.PutPixel(0, 0, Color{ 255, 0, 0, 255 });
+
 	// 提交渲染
 	painter.Present();
 }
@@ -20,22 +21,25 @@ int main(int argc, char* argv[]) {
 	auto& canvas = Canvas::getInstance();
 	//画笔
 	auto& painter = Painter::getInstance();
+    //光线追踪渲染器
+	RayTracing renderer;
 
 	//事件循环 和 GameLoop
 	EventTrain train;
 	Game game(train);
-	
-    //键盘事件
+
+	//键盘事件
 	train.subscribeEvent([](SDL_Event& e) {
 		if (e.type == SDL_EVENT_KEY_DOWN) {
 			SDL_Log("Key pressed: %d", e.key.scancode);
 		}
 	});
-    //渲染事件
-	train.subscribeFrame(RunPixel);
-    
-    
-    //渲染循环
+	//渲染事件
+	train.subscribeFrame([&renderer](float deltaTime) {
+		renderer.Renderer(deltaTime);
+	});
+
+	//渲染循环
 	game.run();
 
 	return 0;

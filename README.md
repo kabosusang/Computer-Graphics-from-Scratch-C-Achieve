@@ -8,6 +8,13 @@
 ## ✨ 项目特性
 - **教学友好**：循环窗口渲染
 
+
+## 🔎 运行截图
+* Chapter2
+<div align="center">
+  <img src="screenshot/RayTracing/Chapter2.png" width="60%" style="border-radius: 8px;">
+</div>
+
 ## 🚀 快速开始
 ```bash
 cmake -G "Unix Makefiles"

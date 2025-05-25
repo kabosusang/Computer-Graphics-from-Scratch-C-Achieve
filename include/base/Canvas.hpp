@@ -24,7 +24,7 @@ private:
 	static SDL_Window* CreateSDLWindow();
 
 private:
-	int WindowW = 640;
-	int WindowH = 480;
+	int WindowW = 600;
+	int WindowH = 600;
 	std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window;
 };
