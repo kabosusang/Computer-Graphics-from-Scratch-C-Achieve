@@ -10,9 +10,14 @@
 
 
 ## 🔎 运行截图
-* Chapter4
+### Chapter4
 <div align="center">
   <img src="screenshot/RayTracing/Chapter4.png" width="60%" style="border-radius: 8px;">
+</div>
+
+### Chapter5 FPS 2 -> 3 🤣🤣
+<div align="center">
+  <img src="screenshot/RayTracing/简单多线程.png" width="60%" style="border-radius: 8px;">
 </div>
 
 ## 🚀 快速开始

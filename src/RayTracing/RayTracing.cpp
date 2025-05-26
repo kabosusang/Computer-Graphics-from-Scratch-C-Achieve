@@ -5,9 +5,10 @@
 #include <RayTracing/RayTracing.hpp>
 #include <Tools/Color.hpp>
 #include <algorithm>
-#include <cerrno>
-#include <iostream>
 #include <limits>
+#include <mutex>
+#include <iostream>
+#include <thread>
 
 RayTracing::RayTracing() :
 		painter(Painter::getInstance()) {
@@ -172,9 +173,10 @@ float RayTracing::ComputeLighting(Vec3 Point, Vec3 Normal, Vec3 view, int specul
 			}
 
 			//检查阴影
-			auto [s1, t1] = ClosestIntersection(Point, vec_l, EPSILON, t_max);
+			//auto [s1, t1] = ClosestIntersection(Point, vec_l, EPSILON, t_max);
+            auto isShadow = BClosestIntersection(Point, vec_l, EPSILON, t_max);
 			//如果有阴影跳过像素
-			if (t1) {
+			if (isShadow) {
 				continue;
 			}
 			//漫反射
@@ -223,6 +225,33 @@ std::tuple<Sphere, float> RayTracing::ClosestIntersection(Vec3 origion, Vec3 dir
 	return { closet_sphere.value(), closet_t };
 }
 
+
+bool RayTracing::BClosestIntersection(Vec3 origion, Vec3 direction, float t_min, float t_max) {
+	auto closet_t = std::numeric_limits<float>::max(); //t的相交值 初始化设置为最大值
+	std::optional<Sphere> closet_sphere;
+	//遍历场景中的圆
+	for (auto sphere : this->scene_.GetSpheres()) {
+		auto [ts1, ts2] = IntersectRaySphere(origion, direction, sphere);
+		if (ts1 < closet_t && t_min < ts1 && ts1 < t_max) { // viewport和projection之间，并且找最近交点
+			closet_t = ts1;
+			closet_sphere = sphere;
+		}
+		if (ts2 < closet_t && t_min < ts2 && ts2 < t_max) { // viewport和projection之间，并且找最近交点
+			closet_t = ts2;
+			closet_sphere = sphere;
+		}
+	}
+	//射线和圆无交点
+	if (!closet_sphere.has_value()) {
+		return false;
+	}
+	return true;
+}
+
+
+
+
+
 void RayTracing::ChangeCameraPosition(SDL_Scancode code) {
 	if (code == SDL_SCANCODE_W) {
 		CameraPosition_.z++;
@@ -247,4 +276,46 @@ void RayTracing::ChangeCameraPosition(SDL_Scancode code) {
 	if (code == SDL_SCANCODE_E) {
 		CameraPosition_.y--;
 	}
+}
+
+/**
+ * @brief 
+ * 类似手机上的渲染 分块渲染最后合并
+ * @param startX 
+ * @param endX 
+ * @param startY 
+ * @param endY 
+ */
+void RayTracing::RenderTile(int startX, int endX, int startY, int endY) {
+	for (int y = startY; y < endY; ++y) {
+		for (int x = startX; x < endX; ++x) {
+			auto D = CanvasToViewport(Vec2(x, y));
+			Color color = TraceRay(CameraPosition_, D, 1, 1000, Depth);
+			std::lock_guard<std::mutex> lock(pixelMutex_);
+			painter.PutPixel(x, y, color);
+		}
+	}
+}
+
+void RayTracing::ParallelRender(float time) {
+    std::cout << "FPS: " << 1.0f / time << std::endl;
+
+	painter.Clear(Color{ 255, 255, 255, 255 });
+
+	const int tileSize = 128; // 128 x 128 像素块
+	std::vector<std::thread> threads;
+
+	for (int y = -canvasheight_ / 2; y < canvasheight_ / 2; y += tileSize) {
+		for (int x = -canvaswidth_ / 2; x < canvaswidth_ / 2; x += tileSize) {
+			threads.emplace_back([=]() {
+				this->RenderTile(x, std::min(x + tileSize, canvaswidth_ / 2),
+						y, std::min(y + tileSize, canvasheight_ / 2));
+			});
+		}
+	}
+
+	for (auto& t : threads) {
+		t.join();
+	}
+	painter.Present();
 }

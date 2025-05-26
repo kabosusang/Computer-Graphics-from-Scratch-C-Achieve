@@ -27,7 +27,8 @@ int main(int argc, char* argv[]) {
     
 	//渲染事件
 	train.subscribeFrame([&renderer](float deltaTime) {
-		renderer.Renderer(deltaTime);
+		//renderer.Renderer(deltaTime);
+        renderer.ParallelRender(deltaTime); //简单多线程渲染
 	});
 
 	//渲染循环
