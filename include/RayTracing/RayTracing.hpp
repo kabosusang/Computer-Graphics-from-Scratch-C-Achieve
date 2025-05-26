@@ -27,6 +27,7 @@ public:
         CameraPosition_.x++;
     }
 
+    void ChangeCameraPosition(SDL_Scancode code);
 private:
 	Vec3 CanvasToViewport(Vec2 point) {
 		return { point.x * viewportwight_ / canvaswidth_, point.y * viewportheight_ / canvasheight_, distance_ };

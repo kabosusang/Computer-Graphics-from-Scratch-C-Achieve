@@ -1,3 +1,4 @@
+#include "SDL3/SDL_scancode.h"
 #include "Tools/Light.hpp"
 #include "Tools/Shape.hpp"
 #include "Tools/Vector.hpp"
@@ -34,7 +35,7 @@ RayTracing::RayTracing() :
 
 void RayTracing::Renderer(float time) {
 	{
-		std::cout << "FPS: " << 1.0f / time << std::endl; //我CPU只有5帧数
+		//std::cout << "FPS: " << 1.0f / time << std::endl; //我CPU只有5帧数
 		//清屏
 		painter.Clear(Color{ 255, 255, 255, 255 });
 		//遍历画布所有像素
@@ -220,4 +221,30 @@ std::tuple<Sphere, float> RayTracing::ClosestIntersection(Vec3 origion, Vec3 dir
 		return { {}, {} }; //返回空
 	}
 	return { closet_sphere.value(), closet_t };
+}
+
+void RayTracing::ChangeCameraPosition(SDL_Scancode code) {
+	if (code == SDL_SCANCODE_W) {
+		CameraPosition_.z++;
+	}
+
+	if (code == SDL_SCANCODE_A) {
+		CameraPosition_.x--;
+	}
+
+	if (code == SDL_SCANCODE_S) {
+		CameraPosition_.z--;
+	}
+
+	if (code == SDL_SCANCODE_D) {
+		CameraPosition_.x++;
+	}
+
+	if (code == SDL_SCANCODE_Q) {
+		CameraPosition_.y++;
+	}
+
+	if (code == SDL_SCANCODE_E) {
+		CameraPosition_.y--;
+	}
 }

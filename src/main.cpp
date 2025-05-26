@@ -20,8 +20,8 @@ int main(int argc, char* argv[]) {
 	train.subscribeEvent([&](SDL_Event& e) {
 		if (e.type == SDL_EVENT_KEY_DOWN) {
 			const char* keyName = SDL_GetScancodeName(e.key.scancode);
-			SDL_Log("Key pressed: %s (Scancode: %d)", keyName, e.key.scancode);
-            renderer.AddCameraX();
+			//SDL_Log("Key pressed: %s (Scancode: %d)", keyName, e.key.scancode);
+            renderer.ChangeCameraPosition(e.key.scancode);
         }
 	});
     
