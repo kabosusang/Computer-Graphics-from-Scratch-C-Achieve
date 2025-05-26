@@ -1,5 +1,5 @@
 # 🎨 Computer Graphics from Scratch (C++ Achieve)  
-### 《计算机图形学入门》3D渲染指南 - 基于SDL3的CPU实时渲染(帧数感人)
+### 《计算机图形学入门》3D渲染指南 - C++实现基于SDL3的CPU实时渲染(帧数感人)
 
 <div align="center">
   <img src="screenshot/BookPage.jpg" width="60%" style="border-radius: 8px;">
@@ -10,9 +10,9 @@
 
 
 ## 🔎 运行截图
-* Chapter2
+* Chapter4
 <div align="center">
-  <img src="screenshot/RayTracing/Chapter2.png" width="60%" style="border-radius: 8px;">
+  <img src="screenshot/RayTracing/Chapter4.png" width="60%" style="border-radius: 8px;">
 </div>
 
 ## 🚀 快速开始

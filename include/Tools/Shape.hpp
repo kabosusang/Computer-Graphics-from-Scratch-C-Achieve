@@ -7,4 +7,5 @@ struct Sphere {
 	float radius;
 	Color color;
     int specular = 0;
+    float reflective = 0.0f;
 };

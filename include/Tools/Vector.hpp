@@ -43,7 +43,7 @@ constexpr auto VLength(Vec3 vec) {
 }
 
 //向量乘数值
-constexpr Vec3 VMutiply(float k, Vec3 vec) {
+constexpr Vec3 VMultiply(float k, Vec3 vec) {
 	return { k * vec.x, k * vec.y, k * vec.z };
 }
 
@@ -71,10 +71,18 @@ constexpr Color CClamp(Color color) {
 	};
 }
 
+//光线反射
+constexpr Vec3 ReflectRay(Vec3 v1,Vec3 v2)
+{
+    return VSubtract(VMultiply(2.0 * VDotProduct(v1, v2), v2), v1);
+}
 
 
+
+
+//法线归一化
 constexpr Vec3 VNormalize(Vec3 vec) {
-	return VMutiply(1.0 / VLength(vec), vec);
+	return VMultiply(1.0 / VLength(vec), vec);
 }
 
 //向量转换颜色
