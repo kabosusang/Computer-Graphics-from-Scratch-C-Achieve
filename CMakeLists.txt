@@ -32,11 +32,10 @@ set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 # 头文件目录
 set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-
 #----------------------------------------------------------------
 # 自动收集头文件（递归搜索 include/ 及其子目录）
 #----------------------------------------------------------------
-file(GLOB_RECURSE HEADERS
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS
     "${INCLUDE_DIR}/*.h"
     "${INCLUDE_DIR}/*.hpp"
     "${INCLUDE_DIR}/*.hxx"
@@ -45,9 +44,18 @@ file(GLOB_RECURSE HEADERS
 #----------------------------------------------------------------
 # 自动收集源文件（推荐显式列出，此处演示自动收集）
 #----------------------------------------------------------------
-file(GLOB_RECURSE SOURCES 
+set(SOURCES)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
   "${SOURCE_DIR}/*.cpp"
 )
+
+
+# 过滤掉不需要的文件（如测试文件）
+foreach(file IN LISTS SRC_FILES)
+    if(NOT file MATCHES ".*/test/.*")  # 排除test目录
+        list(APPEND SOURCES ${file})
+    endif()
+endforeach()
 
 
 #----------------------------------------------------------------
@@ -63,13 +71,22 @@ add_subdirectory(3rdparty/SDL3)
 # 设置可执行文件输出目录
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+add_executable(${PROJECT_NAME})
+
+# 添加源文件到目标
+target_sources(${PROJECT_NAME} PRIVATE ${SOURCES})
+
+# 添加头文件到目标（IDE支持）
+target_sources(${PROJECT_NAME} PRIVATE ${HEADERS})
+
 
 # 现代头文件包含方式
 target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${INCLUDE_DIR}>  # 构建时包含
   # $<INSTALL_INTERFACE:include>       # 安装后包含（可选）
 )
+
+
 #----------------------------------------------------------------
 # 依赖管理示例（假设需要第三方库）
 #----------------------------------------------------------------

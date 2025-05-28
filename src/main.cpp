@@ -1,8 +1,9 @@
 #include "core/Event.hpp"
 #include "core/Game.hpp"
-#include <RayTracing/RayTracing.hpp>
 #include <base/Canvas.hpp>
 #include <base/Painter.hpp>
+#include <RayTracing/RayTracing.hpp>
+#include <Rasterization/Rasterization.hpp>
 
 int main(int argc, char* argv[]) {
 	//画布
