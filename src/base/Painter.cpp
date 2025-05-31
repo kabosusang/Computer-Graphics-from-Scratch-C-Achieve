@@ -1,7 +1,7 @@
 #include <base/Canvas.hpp>
 #include <base/Painter.hpp>
 
-Painter::Painter() :
+Painter::Painter() :canvas(Canvas::getInstance()),
 		renderer(SDL_CreateRenderer(Canvas::getInstance().GetWindow(), NULL), SDL_DestroyRenderer) {
 	if (!renderer) {
 		SDL_Log("Unable to create renderer: %s", SDL_GetError());
@@ -14,7 +14,6 @@ Painter::~Painter() {
 }
 
 void Painter::PutPixel(float x, float y,Color color) {
-    auto& canvas = Canvas::getInstance();
 	SetColor(color);
 	//ChangeCorrdinate
 	auto x1 = static_cast<int>(canvas.GetWindowW() / 2) + x;

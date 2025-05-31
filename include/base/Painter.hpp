@@ -32,4 +32,5 @@ private:
 
 private:
 	std::unique_ptr<SDL_Renderer, decltype(&SDL_DestroyRenderer)> renderer;
+    Canvas& canvas;
 };
