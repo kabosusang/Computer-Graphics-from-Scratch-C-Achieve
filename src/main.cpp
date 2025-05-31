@@ -10,9 +10,6 @@ int main(int argc, char* argv[]) {
 	auto& canvas = Canvas::getInstance();
 	//画笔
 	auto& painter = Painter::getInstance();
-	//光线追踪渲染器
-	RayTracing rayrenderer;
-
     //光栅化着色器
     Rasterization Rasrenderer;
 
@@ -25,17 +22,10 @@ int main(int argc, char* argv[]) {
 		if (e.type == SDL_EVENT_KEY_DOWN) {
 			const char* keyName = SDL_GetScancodeName(e.key.scancode);
 			//SDL_Log("Key pressed: %s (Scancode: %d)", keyName, e.key.scancode);
-            //rayrenderer.ChangeCameraPosition(e.key.scancode);
-        
+
         }
 	});
     
-	//渲染事件
-	// train.subscribeFrame([&rayrenderer](float deltaTime) {
-	// 	//rayrenderer.Renderer(deltaTime);
-    //     //rayrenderer.ParallelRender(deltaTime); //简单多线程渲染
-	// });
-
     train.subscribeFrame([&Rasrenderer](float deltaTime) {
 		Rasrenderer.Renderer(deltaTime);
 	});
