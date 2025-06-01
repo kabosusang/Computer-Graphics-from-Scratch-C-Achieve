@@ -2,6 +2,9 @@
 #include <Tools/Vector.hpp>
 #include <Tools/Triangle.hpp>
 #include <Tools/Model.hpp>
+#include <Tools/Vertex.hpp>
+#include <Tools/MaTrix.hpp>
+#include <Tools/Camera.hpp>
 
 #include "base/Canvas.hpp"
 #include <base/Painter.hpp>
@@ -26,10 +29,10 @@ private:
 
 //Scene
 private:
-    void RenderScene(std::vector<Instance>& instance);
+    void RenderScene(Camera& camera,std::vector<Instance>& instance);
     void RenderInstance(Instance& instance);
+    void RenderModel(Model&  instance,Mat4x4 transform);
 
-    
     void RenderObject(std::vector<Vertex>& vertexes,std::vector<Triangle>& triangles);
     void RenderTriangle(Triangle& triangle,std::vector<Vec2>&);
 private:
@@ -37,6 +40,7 @@ private:
 	Vec2 ViewportToCanvas(Vec2 p2d);
 	//Project 把3D坐标空间的点投影到Viewport上面(因为d确定所以用Vector2)
 	Vec2 ProjectVertex(Vec3 vertex);
+	Vec2 ProjectVertex(Vec4 vertex);
 private:
 	Painter& painter;
 	Canvas& canvas;

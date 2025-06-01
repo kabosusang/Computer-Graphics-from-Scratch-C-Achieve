@@ -3,12 +3,11 @@
 #include <cmath>
 #include <cstdint>
 
-
 struct Vec4 {
-	float x;
-	float y;
-	float z;
-	float w;
+	double x;
+	double y;
+	double z;
+	double w;
 };
 
 struct Vec3 {
@@ -58,27 +57,22 @@ constexpr Vec3 VClamp(Vec3 vec) {
 	};
 }
 
-
 constexpr Color CClamp(Color color) {
 	return {
 		(color.r < (uint8_t)0) ? (uint8_t)0 : (color.r > (uint8_t)255) ? (uint8_t)255
-										: color.r,
+																	   : color.r,
 		(color.g < (uint8_t)0) ? (uint8_t)0 : (color.g > (uint8_t)255) ? (uint8_t)255
-										: color.g,
+																	   : color.g,
 		(color.b < (uint8_t)0) ? (uint8_t)0 : (color.r > (uint8_t)255) ? (uint8_t)255
-										: color.b,
-        255
+																	   : color.b,
+		255
 	};
 }
 
 //光线反射
-constexpr Vec3 ReflectRay(Vec3 v1,Vec3 v2)
-{
-    return VSubtract(VMultiply(2.0 * VDotProduct(v1, v2), v2), v1);
+constexpr Vec3 ReflectRay(Vec3 v1, Vec3 v2) {
+	return VSubtract(VMultiply(2.0 * VDotProduct(v1, v2), v2), v1);
 }
-
-
-
 
 //法线归一化
 constexpr Vec3 VNormalize(Vec3 vec) {
@@ -96,9 +90,9 @@ constexpr Color Vec3ToColor(Vec3 v) {
 }
 
 constexpr Vec3 ColorToVec3(Color c) {
-    return Vec3{
-        static_cast<float>(c.r),
-        static_cast<float>(c.g),
-        static_cast<float>(c.b)
-    };
+	return Vec3{
+		static_cast<float>(c.r),
+		static_cast<float>(c.g),
+		static_cast<float>(c.b)
+	};
 }

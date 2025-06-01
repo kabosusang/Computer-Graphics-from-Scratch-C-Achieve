@@ -1,7 +1,10 @@
+#include "Tools/Camera.hpp"
 #include "Tools/Color.hpp"
+#include "Tools/MaTrix.hpp"
 #include "Tools/Model.hpp"
 #include "Tools/Triangle.hpp"
 #include "Tools/Vector.hpp"
+#include "base/Canvas.hpp"
 #include "base/Painter.hpp"
 #include <Rasterization/Rasterization.hpp>
 #include <cmath>
@@ -42,30 +45,40 @@ std::vector<Triangle> triangles = {
 	Triangle(2, 7, 3, CYAN)
 };
 
-auto cube = Model{vertexes, triangles};
+auto cube = Model{ vertexes, triangles };
 
-std::vector<Instance> instances = {{cube, {-1.5, 0, 7}},
-	         {cube, {1.25, 2, 7.5}}};
+std::vector<Instance> instances = { { cube, { -1.5, 0, 7 },
+											Mat4x4::Identity(), 0.75 },
 
+	{ cube, { 1.25, 2, 7.5 }, MakeOYRotationMatrix(195) } };
+
+//Camera
+Camera camera = { Vertex(-3, 1, 2), MakeOYRotationMatrix(-30) };
 
 Rasterization::Rasterization() :
 		painter(Painter::getInstance()),
 		canvas(Canvas::getInstance()) {
-	
 }
 
 void Rasterization::Renderer(float time) {
 	//std::cout << "FPS: " << 1.0f / time << std::endl;
 	painter.Clear(Color{ 255, 255, 255, 255 });
 	//RenderObject(vertexes, triangles); //单一渲染
-    RenderScene(instances);
+	RenderScene(camera, instances);
 
 	painter.Present();
 }
 
-void Rasterization::RenderScene(std::vector<Instance>& instance) {
+void Rasterization::RenderScene(
+		Camera& camera,
+		std::vector<Instance>& instance) {
+	//因为ViewMatrix的逆矩阵就是转置矩阵
+	auto cameraMatrix = Transposed(camera.orientation) *
+			MakeTranslationMatrix(VMultiply(-1, (Vec3)camera.position));
+
 	for (auto i = 0; i < instance.capacity(); i++) {
-		RenderInstance(instance[i]);
+		auto transform = cameraMatrix * instance[i].getTransform();
+		RenderModel(instance[i].model, transform);
 	}
 }
 
@@ -85,6 +98,19 @@ void Rasterization::RenderTriangle(Triangle& triangle, std::vector<Vec2>& projec
 			projected[triangle.v1],
 			projected[triangle.v2],
 			triangle.color);
+}
+
+void Rasterization::RenderModel(Model& model, Mat4x4 transform) {
+	auto projected = std::vector<Vec2>();
+	for (auto i = 0; i < model.vertexes.capacity(); i++) {
+		auto vertex = model.vertexes[i];
+		auto vertexH = Vertex4{ vertex.x, vertex.y, vertex.z, 1 };
+		//运用变换
+		projected.push_back(ProjectVertex(transform * (Vec4)vertexH));
+	}
+	for (auto i = 0; i < model.triangles.capacity(); i++) {
+		RenderTriangle(model.triangles[i], projected);
+	}
 }
 
 void Rasterization::RenderObject(std::vector<Vertex>& vertexes, std::vector<Triangle>& triangles) {
@@ -298,4 +324,10 @@ Vec2 Rasterization::ProjectVertex(Vec3 v) {
 	return ViewportToCanvas(
 			{ v.x * projection_plane_z / v.z,
 					v.y * projection_plane_z / v.z });
+}
+
+Vec2 Rasterization::ProjectVertex(Vec4 v) {
+	return ViewportToCanvas(
+			{ static_cast<float>(v.x * projection_plane_z / v.z),
+					static_cast<float>(v.y * projection_plane_z / v.z) });
 }

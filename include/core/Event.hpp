@@ -38,6 +38,6 @@ public:
 	}
 
 private:
-	std::vector<EventHandler> eventHandlers_;
-	std::vector<FrameHandler> frameHandlers_;
+	std::vector<EventHandler> eventHandlers_{};
+	std::vector<FrameHandler> frameHandlers_{};
 };
