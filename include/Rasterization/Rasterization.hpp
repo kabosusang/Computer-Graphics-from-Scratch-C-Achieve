@@ -1,6 +1,8 @@
 #pragma once
 #include <Tools/Vector.hpp>
 #include <Tools/Triangle.hpp>
+#include <Tools/Model.hpp>
+
 #include "base/Canvas.hpp"
 #include <base/Painter.hpp>
 #include <vector>
@@ -24,6 +26,10 @@ private:
 
 //Scene
 private:
+    void RenderScene(std::vector<Instance>& instance);
+    void RenderInstance(Instance& instance);
+
+    
     void RenderObject(std::vector<Vertex>& vertexes,std::vector<Triangle>& triangles);
     void RenderTriangle(Triangle& triangle,std::vector<Vec2>&);
 private:

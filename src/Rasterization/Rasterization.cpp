@@ -1,4 +1,5 @@
 #include "Tools/Color.hpp"
+#include "Tools/Model.hpp"
 #include "Tools/Triangle.hpp"
 #include "Tools/Vector.hpp"
 #include "base/Painter.hpp"
@@ -41,20 +42,42 @@ std::vector<Triangle> triangles = {
 	Triangle(2, 7, 3, CYAN)
 };
 
+auto cube = Model{vertexes, triangles};
+
+std::vector<Instance> instances = {{cube, {-1.5, 0, 7}},
+	         {cube, {1.25, 2, 7.5}}};
+
+
 Rasterization::Rasterization() :
 		painter(Painter::getInstance()),
 		canvas(Canvas::getInstance()) {
-	for (auto i = 0; i < vertexes.size(); i++) {
-		vertexes[i].x -= 1.5;
-		vertexes[i].z += 7;
-	}
+	
 }
 
 void Rasterization::Renderer(float time) {
 	//std::cout << "FPS: " << 1.0f / time << std::endl;
 	painter.Clear(Color{ 255, 255, 255, 255 });
-    RenderObject(vertexes, triangles);
+	//RenderObject(vertexes, triangles); //单一渲染
+    RenderScene(instances);
+
 	painter.Present();
+}
+
+void Rasterization::RenderScene(std::vector<Instance>& instance) {
+	for (auto i = 0; i < instance.capacity(); i++) {
+		RenderInstance(instance[i]);
+	}
+}
+
+void Rasterization::RenderInstance(Instance& instance) {
+	auto projected = std::vector<Vec2>();
+	auto model = instance.model;
+	for (auto i = 0; i < model.vertexes.capacity(); i++) {
+		projected.push_back(ProjectVertex(VAdd(instance.position, (Vec3)model.vertexes[i])));
+	}
+	for (auto i = 0; i < model.triangles.capacity(); i++) {
+		RenderTriangle(model.triangles[i], projected);
+	}
 }
 
 void Rasterization::RenderTriangle(Triangle& triangle, std::vector<Vec2>& projected) {
