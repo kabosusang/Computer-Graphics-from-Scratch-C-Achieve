@@ -1,4 +1,5 @@
 #include "Tools/Color.hpp"
+#include "Tools/Triangle.hpp"
 #include "Tools/Vector.hpp"
 #include "base/Painter.hpp"
 #include <Rasterization/Rasterization.hpp>
@@ -7,45 +8,70 @@
 #include <iostream>
 #include <vector>
 
-Rasterization::Rasterization() :
-		painter(Painter::getInstance()),
-		canvas(Canvas::getInstance()) {
-}
-
-auto vA = Vec3(-2, -0.5, 5);
-auto vB = Vec3(-2, 0.5, 5);
-auto vC = Vec3(-1, 0.5, 5);
-auto vD = Vec3(-1, -0.5, 5);
-
-auto vAb = Vec3(-2, -0.5, 6);
-auto vBb = Vec3(-2, 0.5, 6);
-auto vCb = Vec3(-1, 0.5, 6);
-auto vDb = Vec3(-1, -0.5, 6);
+std::vector<Vertex> vertexes = {
+	Vertex(1, 1, 1),
+	Vertex(-1, 1, 1),
+	Vertex(-1, -1, 1),
+	Vertex(1, -1, 1),
+	Vertex(1, 1, -1),
+	Vertex(-1, 1, -1),
+	Vertex(-1, -1, -1),
+	Vertex(1, -1, -1)
+};
 
 auto RED = Color{ 255, 0, 0 };
 auto GREEN = Color{ 0, 255, 0 };
 auto BLUE = Color{ 0, 0, 255 };
+auto YELLOW = Color{ 255, 255, 0 };
+auto PURPLE = Color{ 255, 0, 255 };
+auto CYAN = Color{ 0, 255, 255 };
+
+std::vector<Triangle> triangles = {
+	Triangle(0, 1, 2, RED),
+	Triangle(0, 2, 3, RED),
+	Triangle(4, 0, 3, GREEN),
+	Triangle(4, 3, 7, GREEN),
+	Triangle(5, 4, 7, BLUE),
+	Triangle(5, 7, 6, BLUE),
+	Triangle(1, 5, 6, YELLOW),
+	Triangle(1, 6, 2, YELLOW),
+	Triangle(4, 5, 1, PURPLE),
+	Triangle(4, 1, 0, PURPLE),
+	Triangle(2, 6, 7, CYAN),
+	Triangle(2, 7, 3, CYAN)
+};
+
+Rasterization::Rasterization() :
+		painter(Painter::getInstance()),
+		canvas(Canvas::getInstance()) {
+	for (auto i = 0; i < vertexes.size(); i++) {
+		vertexes[i].x -= 1.5;
+		vertexes[i].z += 7;
+	}
+}
 
 void Rasterization::Renderer(float time) {
 	//std::cout << "FPS: " << 1.0f / time << std::endl;
 	painter.Clear(Color{ 255, 255, 255, 255 });
-
-	DrawLine(ProjectVertex(vA), ProjectVertex(vB), BLUE);
-	DrawLine(ProjectVertex(vB), ProjectVertex(vC), BLUE);
-	DrawLine(ProjectVertex(vC), ProjectVertex(vD), BLUE);
-	DrawLine(ProjectVertex(vD), ProjectVertex(vA), BLUE);
-
-	DrawLine(ProjectVertex(vAb), ProjectVertex(vBb), RED);
-	DrawLine(ProjectVertex(vBb), ProjectVertex(vCb), RED);
-	DrawLine(ProjectVertex(vCb), ProjectVertex(vDb), RED);
-	DrawLine(ProjectVertex(vDb), ProjectVertex(vAb), RED);
-
-	DrawLine(ProjectVertex(vA), ProjectVertex(vAb), GREEN);
-	DrawLine(ProjectVertex(vB), ProjectVertex(vBb), GREEN);
-	DrawLine(ProjectVertex(vC), ProjectVertex(vCb), GREEN);
-	DrawLine(ProjectVertex(vD), ProjectVertex(vDb), GREEN);
-
+    RenderObject(vertexes, triangles);
 	painter.Present();
+}
+
+void Rasterization::RenderTriangle(Triangle& triangle, std::vector<Vec2>& projected) {
+	DrawWireframeTriangle(projected[triangle.v0],
+			projected[triangle.v1],
+			projected[triangle.v2],
+			triangle.color);
+}
+
+void Rasterization::RenderObject(std::vector<Vertex>& vertexes, std::vector<Triangle>& triangles) {
+	auto projected = std::vector<Vec2>();
+	for (auto i = 0; i < vertexes.capacity(); i++) {
+		projected.push_back(ProjectVertex((Vec3)vertexes[i]));
+	}
+	for (auto i = 0; i < triangles.capacity(); i++) {
+		RenderTriangle(triangles[i], projected);
+	}
 }
 
 void Rasterization::DrawLine(Vec2 P0, Vec2 P1, Color color) {
@@ -120,6 +146,12 @@ void Rasterization::DrawLine(Vec3 P0, Vec3 P1, Color color) {
 			painter.PutPixel(xs[y - P0.y], y, color);
 		}
 	}
+}
+
+void Rasterization::DrawWireframeTriangle(Vec2 P0, Vec2 P1, Vec2 P2, Color color) {
+	DrawLine(P0, P1, color);
+	DrawLine(P1, P2, color);
+	DrawLine(P0, P2, color);
 }
 
 void Rasterization::DrawWireframeTriangle(Vec3 P0, Vec3 P1, Vec3 P2, Color color) {
