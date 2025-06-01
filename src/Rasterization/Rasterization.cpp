@@ -4,19 +4,72 @@
 #include <Rasterization/Rasterization.hpp>
 #include <cmath>
 #include <cstdlib>
-#include <vector>
 #include <iostream>
-
+#include <vector>
 
 Rasterization::Rasterization() :
-		painter(Painter::getInstance()) {
+		painter(Painter::getInstance()),
+		canvas(Canvas::getInstance()) {
 }
+
+auto vA = Vec3(-2, -0.5, 5);
+auto vB = Vec3(-2, 0.5, 5);
+auto vC = Vec3(-1, 0.5, 5);
+auto vD = Vec3(-1, -0.5, 5);
+
+auto vAb = Vec3(-2, -0.5, 6);
+auto vBb = Vec3(-2, 0.5, 6);
+auto vCb = Vec3(-1, 0.5, 6);
+auto vDb = Vec3(-1, -0.5, 6);
+
+auto RED = Color{ 255, 0, 0 };
+auto GREEN = Color{ 0, 255, 0 };
+auto BLUE = Color{ 0, 0, 255 };
 
 void Rasterization::Renderer(float time) {
 	//std::cout << "FPS: " << 1.0f / time << std::endl;
-    painter.Clear(Color{ 255, 255, 255, 255 });
-	DrawFilledTriangle({ -200, -250, 0.3 }, { 200, 50, 0.1 }, { 20, 250, 1.0 }, { 0, 255, 0 });
+	painter.Clear(Color{ 255, 255, 255, 255 });
+
+	DrawLine(ProjectVertex(vA), ProjectVertex(vB), BLUE);
+	DrawLine(ProjectVertex(vB), ProjectVertex(vC), BLUE);
+	DrawLine(ProjectVertex(vC), ProjectVertex(vD), BLUE);
+	DrawLine(ProjectVertex(vD), ProjectVertex(vA), BLUE);
+
+	DrawLine(ProjectVertex(vAb), ProjectVertex(vBb), RED);
+	DrawLine(ProjectVertex(vBb), ProjectVertex(vCb), RED);
+	DrawLine(ProjectVertex(vCb), ProjectVertex(vDb), RED);
+	DrawLine(ProjectVertex(vDb), ProjectVertex(vAb), RED);
+
+	DrawLine(ProjectVertex(vA), ProjectVertex(vAb), GREEN);
+	DrawLine(ProjectVertex(vB), ProjectVertex(vBb), GREEN);
+	DrawLine(ProjectVertex(vC), ProjectVertex(vCb), GREEN);
+	DrawLine(ProjectVertex(vD), ProjectVertex(vDb), GREEN);
+
 	painter.Present();
+}
+
+void Rasterization::DrawLine(Vec2 P0, Vec2 P1, Color color) {
+	if (std::abs(P1.x - P0.x) > std::abs(P1.y - P0.y)) {
+		//直线偏向水平的情况
+		//确保x0 < x1
+		if (P0.x > P1.x) {
+			Swap(P0, P1);
+		}
+		auto ys = Interpolate(P0.x, P0.y, P1.x, P1.y);
+		for (auto x = P0.x; x <= P1.x; x++) {
+			painter.PutPixel(x, ys[x - P0.x], color);
+		}
+	} else {
+		//直线偏向垂直情况
+		//确保y0 < y1
+		if (P0.y > P1.y) {
+			Swap(P0, P1);
+		}
+		auto xs = Interpolate(P0.y, P0.x, P1.y, P1.x);
+		for (auto y = P0.y; y <= P1.y; y++) {
+			painter.PutPixel(xs[y - P0.y], y, color);
+		}
+	}
 }
 
 void Rasterization::DrawLine(Vec3 P0, Vec3 P1, Color color) {
@@ -91,6 +144,12 @@ std::vector<float> Rasterization::Interpolate(float i0, float d0, float i1, floa
 		d += a;
 	}
 	return values;
+}
+
+void Rasterization::Swap(Vec2& p0, Vec2& p1) {
+	Vec2 temp = p0;
+	p0 = p1;
+	p1 = temp;
 }
 
 void Rasterization::Swap(Vec3& p0, Vec3& p1) {
@@ -172,4 +231,16 @@ void Rasterization::DrawFilledTriangle(Vec3 P0, Vec3 P1, Vec3 P2, Color color) {
 			painter.PutPixel(x, y, blended_color);
 		}
 	}
+}
+
+Vec2 Rasterization::ViewportToCanvas(Vec2 p2d) {
+	return Vec2(
+			p2d.x * canvas.GetWindowW() / viewport_size,
+			p2d.y * canvas.GetWindowH() / viewport_size);
+}
+
+Vec2 Rasterization::ProjectVertex(Vec3 v) {
+	return ViewportToCanvas(
+			{ v.x * projection_plane_z / v.z,
+					v.y * projection_plane_z / v.z });
 }
