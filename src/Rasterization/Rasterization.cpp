@@ -4,23 +4,27 @@
 #include "Tools/Model.hpp"
 #include "Tools/Triangle.hpp"
 #include "Tools/Vector.hpp"
+#include "Tools/Vertex.hpp"
 #include "base/Canvas.hpp"
 #include "base/Painter.hpp"
 #include <Rasterization/Rasterization.hpp>
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+
+#include <optional>
 #include <vector>
 
-std::vector<Vertex> vertexes = {
-	Vertex(1, 1, 1),
-	Vertex(-1, 1, 1),
-	Vertex(-1, -1, 1),
-	Vertex(1, -1, 1),
-	Vertex(1, 1, -1),
-	Vertex(-1, 1, -1),
-	Vertex(-1, -1, -1),
-	Vertex(1, -1, -1)
+std::vector<Vertex4> vertexes = {
+	Vertex4(1, 1, 1),
+	Vertex4(-1, 1, 1),
+	Vertex4(-1, -1, 1),
+	Vertex4(1, -1, 1),
+	Vertex4(1, 1, -1),
+	Vertex4(-1, 1, -1),
+	Vertex4(-1, -1, -1),
+	Vertex4(1, -1, -1)
 };
 
 auto RED = Color{ 255, 0, 0 };
@@ -45,7 +49,7 @@ std::vector<Triangle> triangles = {
 	Triangle(2, 7, 3, CYAN)
 };
 
-auto cube = Model{ vertexes, triangles };
+auto cube = Model{ vertexes, triangles, { 0, 0, 0 }, (float)std::sqrt(3) };
 
 std::vector<Instance> instances = { { cube, { -1.5, 0, 7 },
 											Mat4x4::Identity(), 0.75 },
@@ -58,6 +62,31 @@ Camera camera = { Vertex(-3, 1, 2), MakeOYRotationMatrix(-30) };
 Rasterization::Rasterization() :
 		painter(Painter::getInstance()),
 		canvas(Canvas::getInstance()) {
+	//因为我们默认左右两边clip 都是45°
+	float s2 = std::sqrt(2) / 2.0;
+
+	camera.clipping_planes = {
+		{ { 0, 0, 1 }, -1 }, //Near 近平面
+		{ { s2, 0, s2 }, 0 }, //Left 左平面
+		{ { -s2, 0, s2 }, 0 }, //Right 右平面
+		{ { 0, -s2, s2 }, 0 }, //Top 上平面
+		{ { 0, s2, s2 }, 0 }, //Bottom 下平面
+	};
+	/*
+			 o [相机位置 (0,0,0)]
+			 ╱│╲
+			╱ │ ╲
+		   ╱  │  ╲
+		  ╱   │   ╲
+  左平面(/)    │    (\)右平面
+		╱     │     ╲
+	   ╱      │      ╲
+	  ╱       │       ╲
+	 ╱        │        ╲
+	╱         │         ╲
+   ╱          │          ╲
+
+	*/
 }
 
 void Rasterization::Renderer(float time) {
@@ -76,19 +105,77 @@ void Rasterization::RenderScene(
 	auto cameraMatrix = Transposed(camera.orientation) *
 			MakeTranslationMatrix(VMultiply(-1, (Vec3)camera.position));
 
-	for (auto i = 0; i < instance.capacity(); i++) {
+	for (auto i = 0; i < instance.size(); i++) {
 		auto transform = cameraMatrix * instance[i].getTransform();
-		RenderModel(instance[i].model, transform);
+		auto clipped = TransformAndClip(camera.clipping_planes, instances[i].model, transform);
+		if (clipped.has_value()) {
+			RenderModel(instance[i].model, transform);
+		}
+	}
+}
+
+std::optional<Model> Rasterization::TransformAndClip(std::vector<Plane>& clipping_planes, Model& model, Mat4x4 transform) {
+	//模型中心Vertex
+	auto center = transform * (Vec4)model.bounds_center;
+	Vertex4 centerv{ (float)center.x, (float)center.y, (float)center.z, 1 };
+
+	for (auto p = 0; p < clipping_planes.size(); p++) {
+		auto distance = VDotProduct((Vec3)clipping_planes[p].normal, (Vec3)center) + clipping_planes[p].distance;
+		if (distance < -model.bounds_radius) {
+			return std::nullopt;
+		}
+	}
+
+	//Apply modelview transform
+	std::vector<Vertex4> vertexes;
+	for (auto i = 0; i < model.vertexes.size(); i++) {
+		auto temp = transform * (Vertex4)model.vertexes[i];
+		vertexes.emplace_back(transform * (Vertex4)model.vertexes[i]);
+	}
+
+	// Clip the entire model against each successive plane.
+	auto triangles = model.triangles;
+	for (auto p = 0; p < clipping_planes.size(); p++) {
+		std::vector<Triangle> new_triangles;
+		for (auto i = 0; i < triangles.size(); i++) {
+			ClipTriangle(triangles[i], clipping_planes[p], new_triangles, vertexes);
+		}
+		triangles = std::move(new_triangles);
+	}
+
+	return std::optional<Model>(
+			Model(std::move(vertexes), std::move(triangles), centerv, model.bounds_radius));
+}
+
+void Rasterization::ClipTriangle(Triangle triangle, Plane plane, std::vector<Triangle>& triangles, std::vector<Vertex4>& vertexes) {
+	auto v0 = vertexes[triangle.v0];
+	auto v1 = vertexes[triangle.v1];
+	auto v2 = vertexes[triangle.v2];
+
+	auto in0 = VDotProduct((Vec3)plane.normal, (Vec3)v0) + plane.distance > 0;
+	auto in1 = VDotProduct((Vec3)plane.normal, (Vec3)v1) + plane.distance > 0;
+	auto in2 = VDotProduct((Vec3)plane.normal, (Vec3)v2) + plane.distance > 0;
+
+	auto in_count = in0 + in1 + in2;
+	if (in_count == 0) {
+		// Nothing to do - the triangle is fully clipped out.
+	} else if (in_count == 3) {
+		// The triangle is fully in front of the plane.
+		triangles.push_back(triangle);
+	} else if (in_count == 1) {
+		// The triangle has one vertex in. Output is one clipped triangle.
+	} else if (in_count == 2) {
+		// The triangle has two vertexes in. Output is two clipped triangles.
 	}
 }
 
 void Rasterization::RenderInstance(Instance& instance) {
 	auto projected = std::vector<Vec2>();
 	auto model = instance.model;
-	for (auto i = 0; i < model.vertexes.capacity(); i++) {
+	for (auto i = 0; i < model.vertexes.size(); i++) {
 		projected.push_back(ProjectVertex(VAdd(instance.position, (Vec3)model.vertexes[i])));
 	}
-	for (auto i = 0; i < model.triangles.capacity(); i++) {
+	for (auto i = 0; i < model.triangles.size(); i++) {
 		RenderTriangle(model.triangles[i], projected);
 	}
 }
@@ -102,23 +189,23 @@ void Rasterization::RenderTriangle(Triangle& triangle, std::vector<Vec2>& projec
 
 void Rasterization::RenderModel(Model& model, Mat4x4 transform) {
 	auto projected = std::vector<Vec2>();
-	for (auto i = 0; i < model.vertexes.capacity(); i++) {
+	for (auto i = 0; i < model.vertexes.size(); i++) {
 		auto vertex = model.vertexes[i];
 		auto vertexH = Vertex4{ vertex.x, vertex.y, vertex.z, 1 };
 		//运用变换
 		projected.push_back(ProjectVertex(transform * (Vec4)vertexH));
 	}
-	for (auto i = 0; i < model.triangles.capacity(); i++) {
+	for (auto i = 0; i < model.triangles.size(); i++) {
 		RenderTriangle(model.triangles[i], projected);
 	}
 }
 
 void Rasterization::RenderObject(std::vector<Vertex>& vertexes, std::vector<Triangle>& triangles) {
 	auto projected = std::vector<Vec2>();
-	for (auto i = 0; i < vertexes.capacity(); i++) {
+	for (auto i = 0; i < vertexes.size(); i++) {
 		projected.push_back(ProjectVertex((Vec3)vertexes[i]));
 	}
-	for (auto i = 0; i < triangles.capacity(); i++) {
+	for (auto i = 0; i < triangles.size(); i++) {
 		RenderTriangle(triangles[i], projected);
 	}
 }
@@ -276,7 +363,7 @@ void Rasterization::DrawFilledTriangle(Vec3 P0, Vec3 P1, Vec3 P2, Color color) {
 	auto& h012 = h01; //存储两条短边
 
 	//4. 决定哪条边是左侧边 哪条是右侧边
-	auto m = std::floor(x012.capacity() / 2);
+	auto m = std::floor(x012.size() / 2);
 
 	// 定义选择函数
 	auto get_boundaries = [&]() -> std::tuple<std::vector<float>&, std::vector<float>&, std::vector<float>&, std::vector<float>&> {

@@ -3,18 +3,25 @@
 #include <cmath>
 #include <cstdint>
 
-struct Vec4 {
-	double x;
-	double y;
-	double z;
-	double w;
-};
+
 
 struct Vec3 {
 	float x;
 	float y;
 	float z;
 };
+struct Vec4 {
+	double x;
+	double y;
+	double z;
+	double w;
+
+    // 显式转换为 Vec3
+    explicit operator Vec3() const {
+        return Vec3{static_cast<float>(x), static_cast<float>(y), static_cast<float>(z)};
+    }
+};
+
 
 struct Vec2 {
 	float x;

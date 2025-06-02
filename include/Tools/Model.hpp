@@ -7,8 +7,10 @@
 
 
 struct Model {
-	std::vector<Vertex>& vertexes;
-	std::vector<Triangle>& triangles;
+	std::vector<Vertex4> vertexes;
+	std::vector<Triangle> triangles;
+    Vertex4 bounds_center{};
+    float bounds_radius{};
 };
 
 struct Instance {

@@ -20,7 +20,7 @@ public:
 	 * @return Vec3
 	 */
 	static Vec3 CanvasToViewport(Vec2 point, Vec4 wh, float d) {
-		return { point.x * wh.x / wh.z, point.y * wh.y / wh.w, d };
+		return { static_cast<float>(point.x * wh.x / wh.z), static_cast<float>(point.y * wh.y / wh.w), d };
 	}
 	//主渲染逻辑
 	void Renderer(float time);
