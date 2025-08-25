@@ -38,7 +38,7 @@ constexpr Vec3 VAdd(Vec3 v1, Vec3 v2) {
 }
 
 //向量长度
-constexpr auto VLength(Vec3 vec) {
+inline float VLength(Vec3 vec) {
 	return std::sqrt(VDotProduct(vec, vec));
 }
 
